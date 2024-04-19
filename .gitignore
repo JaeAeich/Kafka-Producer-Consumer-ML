@@ -2,3 +2,6 @@
 data
 archive.zip
 /**/.env
+*.csv
+*.keras
+logs.*

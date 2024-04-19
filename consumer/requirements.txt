@@ -1,2 +1,6 @@
 kafka-python
 python-dotenv
+numpy
+pandas
+scikit-learn
+tensorflow
