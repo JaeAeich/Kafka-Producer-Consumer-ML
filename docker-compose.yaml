@@ -1,17 +1,18 @@
-version: '3.8'
+version: '3'
 
 services:
   zookeeper:
     image: wurstmeister/zookeeper
     container_name: zookeeper
     ports:
-      - 2181:2181
-
+      - '2181:2181'
   kafka:
     image: wurstmeister/kafka
     container_name: kafka
     ports:
-      - 9092:9092
+      - '9092:9092'
+    expose:
+      - '9092'
     environment:
       KAFKA_LISTENERS: 'INTERNAL://:29092,EXTERNAL://:9092'
       KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka:29092,EXTERNAL://localhost:9092'
@@ -20,42 +21,38 @@ services:
       KAFKA_ADVERTISED_HOST_NAME: localhost
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: create_order:2:1
-
-  kafdrop:
-    image: obsidiandynamics/kafdrop
-    restart: 'no'
-    ports:
-      - 9000:9000
-    environment:
-      KAFKA_BROKERCONNECT: 'kafka:29092'
-      JVM_OPTS: '-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify'
+  producer-1:
+    build:
+      context: ./producer
+    container_name: producer-1
     depends_on:
+      - zookeeper
       - kafka
-
-  # producer-1:
-  #   build:
-  #     context: ./producer
-  #   container_name: producer-1
-  #   depends_on:
-  #     - zookeeper
-  #     - kafka
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - CSV_FILE_PATH=./data/ACC_minute_data_with_indicators.csv
-  #   volumes:
-  #     - ./data:/app/data
-
-  # producer-2:
-  #   build:
-  #     context: ./producer
-  #   container_name: producer-2
-  #   depends_on:
-  #     - zookeeper
-  #     - kafka
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - CSV_FILE_PATH=./data/ADANIENT_minute_data_with_indicators.csv
-  #   volumes:
-  #     - ./data:/app/data
+    env_file:
+      - docker.env
+    environment:
+      - CSV_FILE_PATH=./data/ACC_minute_data_with_indicators.csv
+    volumes:
+      - ./data:/app/data
+  producer-2:
+    build:
+      context: ./producer
+    container_name: producer-2
+    depends_on:
+      - zookeeper
+      - kafka
+    env_file:
+      - docker.env
+    environment:
+      - CSV_FILE_PATH=./data/ADANIENT_minute_data_with_indicators.csv
+    volumes:
+      - ./data:/app/data
+  consumer:
+    build:
+      context: ./consumer
+    container_name: consumer
+    depends_on:
+      - producer-1
+      - producer-2
+    env_file:
+      - docker.env
