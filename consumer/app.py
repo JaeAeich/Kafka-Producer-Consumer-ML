@@ -66,6 +66,7 @@ if __name__ == "__main__":
         i = i % time_interval
         if i == 0:
             data_from_kafka = asyncio.run(consume_messages(model))
+            model.save('model.keras')
         message = json.loads(message.value)
         if buffer.get(message["name"]) is None:
             buffer[message["name"]] = FifoBuffer(max_memory)
