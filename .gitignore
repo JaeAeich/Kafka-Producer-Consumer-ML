@@ -5,3 +5,4 @@ archive.zip
 *.csv
 *.keras
 logs.*
+__pycache__
