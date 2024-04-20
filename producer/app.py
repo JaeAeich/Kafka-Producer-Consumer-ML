@@ -24,25 +24,25 @@ print("#######################################")
 # Create Kafka producer
 producer = KafkaProducer(
     bootstrap_servers=bootstrap_servers,
-    value_serializer=lambda x: json.dumps(x).encode('utf-8')
+    value_serializer=lambda x: json.dumps(x).encode("utf-8"),
 )
+
 
 # Function to send a message to Kafka
 def send_message(message):
     producer.send(topic, value=message)
     producer.flush()
 
-# Function to read CSV file and send its content to Kafka
+
 def send_csv_to_kafka(csv_file_path):
-    with open(csv_file_path, 'r') as file:
+    with open(csv_file_path, "r") as file:
         reader = csv.DictReader(file)
         for row in reader:
-            row['name']=csv_file_path
+            row["name"] = csv_file_path
             data = json.dumps(row)
-            # data['name'] =csv_file_path
             print("sending data to kafka: ", data)
             send_message(data)
             time.sleep(delay)
 
-if __name__ == "__main__":
-    send_csv_to_kafka(csv_file_path)
+
+send_csv_to_kafka(csv_file_path)

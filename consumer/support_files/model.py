@@ -4,6 +4,9 @@ from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
 from keras.layers import LSTM, Dense
 from keras.optimizers import Adam
+from keras.models import load_model
+from sklearn.preprocessing import LabelEncoder
+import os
 
 
 class Stock_Predictor:
@@ -71,15 +74,18 @@ class Stock_Predictor:
         "BETA",
     ]
 
-    predict_features = ["Close", "open", "high", "low", "volume"]
+    predict_features = ["close", "open", "high", "low", "volume"]
     seq_length = 10
     model = None
-    model_path = "model.h5"
     input_shape = None
+    label_encoder = LabelEncoder()
 
-    def Stock_Predictor(self, seq_length=10):
+    def __init__(self, model_file=None, seq_length=10):
         self.input_shape = (seq_length, len(self.features))
-        self.model = self.create_model()
+        if model_file is not None and os.path.exists(model_file):
+            self.model = load_model(model_file)
+        else:
+            self.model = self.create_model()
         self.seq_length = seq_length
 
     def create_model(self):
@@ -96,10 +102,11 @@ class Stock_Predictor:
         model.compile(optimizer=Adam(learning_rate=0.001), loss="mean_squared_error")
         return model
 
-    def preprocess_data(self, data):
+    def preprocessing(self, data):
         # data processing
         df = data.copy()
         df["date"] = pd.to_datetime(df["date"]).astype(int)
+        df["name"] = self.label_encoder.fit_transform(df["name"])
         scaler = MinMaxScaler(feature_range=(0, 1))
         scaled_data = scaler.fit_transform(df[self.features])
         return df, scaled_data, scaler
@@ -115,15 +122,13 @@ class Stock_Predictor:
     def processing_pipleine(self):
         pass
 
-    # data expecects 2d json object
+    # data expecects queue object
     def train_model(self, data):
 
         test_loss_list = []
         train_loss_list = []
-        # data = converted()
-
         data, scaled_data, scaler = self.preprocessing(data)
-        X, y = self.create_sequences(scaled_data, self.sequence_length)
+        X, y = self.create_sequences(scaled_data, self.seq_length)
         y = y[:, :5]
         train_size = int(len(X) * 0.8)
         test_size = len(X) - train_size
@@ -136,25 +141,27 @@ class Stock_Predictor:
         # test_loss_list.append(test_loss)
         # return train_loss_list, test_loss_list
 
-    def prediction_pieline(self, data):
-        # convert data to dataframe
-        data.columns = self.features
+    def prediction_pipeline(self, data):
         data["date"] = pd.to_datetime(data["date"]).astype(int)
+        data["name"] = self.label_encoder.fit_transform(data["name"])
         scaler = MinMaxScaler(feature_range=(0, 1))
         scaled_data = scaler.fit_transform(data[self.features])
-        scaled_data = scaled_data.reshape((1, self.sequence_length, len(self.features)))
+        scaled_data = scaled_data.reshape((1, self.seq_length, len(self.features)))
         return scaled_data, scaler
 
     def postprocessing_pipeline(self, predicted_data, scaler):
-        temp = np.zeros((1, 60))
-        temp[:, :5] = predicted_data  # noqa: F821
+        temp = np.zeros((1, 61))
+        temp[:, :5] = predicted_data
         predicted_data = temp
         predicted_data = scaler.inverse_transform(predicted_data)
         predicted_data = pd.DataFrame(predicted_data, columns=self.features)
         return predicted_data
 
-    def prdict(self, data):
+    def predict(self, data):
         scaled_data, scaler = self.prediction_pipeline(data)
         predicted_data = self.model.predict(scaled_data)
         predicted_data = self.postprocessing_pipeline(predicted_data, scaler)
-        return predicted_data
+        return predicted_data[self.predict_features]
+
+
+# commet
