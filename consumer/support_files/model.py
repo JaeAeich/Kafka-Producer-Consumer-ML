@@ -162,3 +162,6 @@ class Stock_Predictor:
         predicted_data = self.model.predict(scaled_data)
         predicted_data = self.postprocessing_pipeline(predicted_data, scaler)
         return predicted_data[self.predict_features]
+
+
+# commet
