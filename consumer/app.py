@@ -8,6 +8,9 @@ from support_files.fifo import FifoBuffer
 import pandas as pd
 from support_files.model import Stock_Predictor
 import datetime
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.animation import FuncAnimation
 
 # load_dotenv()
 
@@ -52,14 +55,19 @@ async def consume_messages(model):
     model.train_model(dfs)
 
 
-TIME_INTERVAL_OF_TRAIN = 100
+TIME_INTERVAL_OF_TRAIN = 100000
 if __name__ == "__main__":
     i = 0
     model = Stock_Predictor("model.keras", 10)
+
+    fig, ax = plt.subplots()
+    (pred_line,) = ax.plot([], [], "r-", label="Predicted")
+    (obs_line,) = ax.plot([], [], "b-", label="Actual")
+    ax.legend()
+
     for message in consumer:
         i += 1
         i = i % TIME_INTERVAL_OF_TRAIN
-        print(i)
         if i == 0:
             data_from_kafka = asyncio.run(consume_messages(model))
         message = json.loads(message.value)

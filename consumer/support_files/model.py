@@ -134,7 +134,7 @@ class Stock_Predictor:
         test_size = len(X) - train_size
         X_train, X_test = X[0:train_size], X[train_size : len(X)]
         y_train, y_test = y[0:train_size], y[train_size : len(y)]
-        self.model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
+        self.model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=1)
         # train_loss = self.model.evaluate(X_train, y_train, verbose=0)
         # test_loss = self.model.evaluate(X_test, y_test, verbose=0)
         # train_loss_list.append(train_loss)
