@@ -55,6 +55,27 @@ async def consume_messages(model):
     model.train_model(dfs)
 
 
+import csv
+
+
+# def append_to_csv(data_point, csv_file):
+#     with open(csv_file, "a", newline="") as csvfile:
+#         writer = csv.writer(csvfile)
+#         writer.writerow(data_point)
+
+
+def append_to_csv(data_point, csv_file, max_data_points=1000):
+    with open(csv_file, "a", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(data_point)
+    with open(csv_file, "r") as csvfile:
+        lines = csvfile.readlines()
+        if len(lines) > max_data_points:
+            lines_to_keep = lines[-max_data_points:]
+            with open(csv_file, "w", newline="") as csvfile:
+                csvfile.writelines(lines_to_keep)
+
+
 TIME_INTERVAL_OF_TRAIN = 100000
 if __name__ == "__main__":
     i = 0
@@ -70,6 +91,7 @@ if __name__ == "__main__":
         i = i % TIME_INTERVAL_OF_TRAIN
         if i == 0:
             data_from_kafka = asyncio.run(consume_messages(model))
+            model.save("model.keras")
         message = json.loads(message.value)
         if buffer.get(message["name"]) is None:
             buffer[message["name"]] = FifoBuffer(MAX_MEMORY)
@@ -77,9 +99,12 @@ if __name__ == "__main__":
         if buffer[message["name"]].getlatest().shape[0] >= 10:
             current_time = datetime.datetime.now()
             formatted_time = current_time.strftime("%H:%M:%S")
-            print("Current time:", formatted_time)
-            print(
+            # print("Current time:", formatted_time)
+            temp = [
                 message["name"],
-                message["close"],
-                model.predict(buffer[message["name"]].getlatest())["close"],
-            )
+                float(message["close"]),
+                model.predict(buffer[message["name"]].getlatest())["close"].values[0],
+                formatted_time,
+            ]
+            print(temp)
+            append_to_csv(temp, temp[0])
