@@ -1,6 +1,6 @@
 import os
 
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 from kafka import KafkaConsumer
 import asyncio
 import json
@@ -12,22 +12,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
-# load_dotenv()
-
-MAX_MEMORY = 1000  # Maximum number of data points to store in memory
+load_dotenv()
 
 # configurations
-# bootstrap_servers = os.environ.get("KAFKA_SERVER")
-# topic = os.environ.get("KAFKA_TOPIC")
-# delay = int(os.environ.get("CONSUMER_DELAY"))
-
-bootstrap_servers = "localhost:29092"
-topic = "test_topic"
-delay = 5
+max_memory = int(os.environ.get("MAX_MEMORY"))  # Maximum memory to store the data
+time_interval = max_memory*int(os.environ.get('NUMBER_OF_PRODUCER'))  # Time interval to train the model
+bootstrap_servers = os.environ.get("KAFKA_SERVER")
+topic = os.environ.get("KAFKA_TOPIC")
 
 print("#######################################")
 print("bootstrap_servers: ", bootstrap_servers)
 print("topic: ", topic)
+print("max_memory: ", max_memory)
+print("time_interval: ", time_interval)
 print("#######################################")
 
 buffer_backup = "buffer_backup.json"
@@ -55,7 +52,6 @@ async def consume_messages(model):
     model.train_model(dfs)
 
 
-TIME_INTERVAL_OF_TRAIN = 100000
 if __name__ == "__main__":
     i = 0
     model = Stock_Predictor("model.keras", 10)
@@ -67,12 +63,12 @@ if __name__ == "__main__":
 
     for message in consumer:
         i += 1
-        i = i % TIME_INTERVAL_OF_TRAIN
+        i = i % time_interval
         if i == 0:
             data_from_kafka = asyncio.run(consume_messages(model))
         message = json.loads(message.value)
         if buffer.get(message["name"]) is None:
-            buffer[message["name"]] = FifoBuffer(MAX_MEMORY)
+            buffer[message["name"]] = FifoBuffer(max_memory)
         buffer[message["name"]].insert(message)
         if buffer[message["name"]].getlatest().shape[0] >= 10:
             current_time = datetime.datetime.now()
